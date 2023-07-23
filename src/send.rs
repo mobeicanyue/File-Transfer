@@ -1,6 +1,6 @@
 use blake3::Hasher;
-use std::io::{Read, Seek, SeekFrom, Write};
-use std::net::{SocketAddr, TcpStream};
+use std::io::{Read, Seek, SeekFrom, Write,copy};
+use std::net::{Shutdown, SocketAddr, TcpStream};
 use std::path::Path;
 
 const MAX_PACKET_SIZE: usize = 4 * 1024;
@@ -8,13 +8,22 @@ const MAX_PACKET_SIZE: usize = 4 * 1024;
 pub fn send_file(socket: &SocketAddr, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     println!("Connecting to server at {}", socket);
 
-    let mut stream: TcpStream = TcpStream::connect(socket)?; // 创建套接字
+    // 创建套接字
+    let mut stream = match TcpStream::connect(socket) {
+        Ok(stream) => stream,
+        Err(e) => {
+            panic!(
+                "Error connecting to socket, please check port usage:\n {}",
+                e
+            );
+        }
+    };
 
     let mut file = std::fs::File::open(file_path)?; // 创建文件
 
     // 计算文件的blake3
     let mut blake3 = Hasher::new();
-    std::io::copy(&mut file, &mut blake3)?; // std::io::copy 将文件的内容复制到 blake3 中
+    copy(&mut file, &mut blake3)?; // std::io::copy 将文件的内容复制到 blake3 中
     let hash_result = blake3.finalize(); // 计算哈希值
 
     let hash_value: &[u8; 32] = hash_result.as_bytes(); // 将hash值转换为字节数组,默认32字节长度
@@ -53,7 +62,7 @@ pub fn send_file(socket: &SocketAddr, file_path: &str) -> Result<(), Box<dyn std
     }
 
     // 关闭写入流
-    stream.shutdown(std::net::Shutdown::Write)?;
+    stream.shutdown(Shutdown::Write)?;
     println!("File successfully sent.");
     Ok(())
 }

@@ -7,12 +7,20 @@ const MAX_PACKET_SIZE: usize = 4 * 1024;
 
 pub fn receive_file(ip: &SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     println!("Server listening on {}", ip);
-    // 创建套接字
-    let listener: TcpListener = TcpListener::bind(ip)?;
+    // 创建套接字 let listener: TcpListener = TcpListener::bind(ip);
+    let listener: TcpListener = match TcpListener::bind(ip) {
+        Ok(listener) => listener,
+        Err(e) => {
+            panic!("Error binding to socket, please check port usage:\n {}", e);
+        }
+    };
     println!("Waiting for incoming connections...");
 
     // 接收连接
-    let (mut stream, _) = listener.accept()?;
+    let (mut stream, socket) = listener.accept()?;
+    // 获取客户端的IP地址
+    let client_ip = socket.ip();
+    println!("Remote Client IP address: {}", client_ip);
 
     // 1.接收文件名的长度
     let mut file_name_length_buffer = [0; 1]; // Assuming the length can be represented in 4 bytes (u32)
@@ -50,7 +58,14 @@ pub fn receive_file(ip: &SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     let mut blake3 = Hasher::new();
     // 5.接收文件字节
     loop {
-        let bytes_read = stream.read(&mut buffer)?;
+        // let bytes_read = stream.read(&mut buffer)
+        let bytes_read = match stream.read(&mut buffer) {
+            Ok(bytes_read) => bytes_read,
+            Err(e) => {
+                panic!("Error reading stream: {}", e);
+            }
+        };
+
         if bytes_read == 0 {
             // Connection closed, file receiving completed
             break;
@@ -59,7 +74,10 @@ pub fn receive_file(ip: &SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         // 更新 BLAKE3 哈希值
         blake3.update(&buffer[..bytes_read]);
 
-        file.write_all(&buffer[..bytes_read])?;
+        // file.write_all(&buffer[..bytes_read])
+        if let Err(e) = file.write_all(&buffer[..bytes_read]) {
+            panic!("Error writing to file: {}", e);
+        }
     }
 
     println!("File received. Verifying file integrity...");
