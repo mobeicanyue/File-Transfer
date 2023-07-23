@@ -101,16 +101,16 @@ jobs:
         run: |
           strip target/${{ matrix.target }}/release/file-transfer${{matrix.suffix}}
 
-      - name: Compress binaries by UPX
-        # Upx may not support some platforms. Ignore the errors
-        continue-on-error: true
-        if: matrix.target != 'aarch64-pc-windows-msvc' && matrix.target != 'riscv64gc-unknown-linux-gnu'
-        uses: svenstaro/upx-action@v2
-        with:
-          strip: false
-          args: -q --best --ultra-brute --no-lzma
-          files: |
-            target/${{ matrix.target }}/release/file-transfer${{matrix.suffix}}
+      # - name: Compress binaries by UPX
+      #   # Upx may not support some platforms. Ignore the errors
+      #   continue-on-error: true
+      #   if: matrix.target != 'aarch64-pc-windows-msvc' && matrix.target != 'riscv64gc-unknown-linux-gnu'
+      #   uses: svenstaro/upx-action@v2
+      #   with:
+      #     strip: false
+      #     args: -q --best --ultra-brute --no-lzma
+      #     files: |
+      #       target/${{ matrix.target }}/release/file-transfer${{matrix.suffix}}
 
       - uses: actions/download-artifact@v3
         with:
