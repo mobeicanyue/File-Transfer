@@ -1,0 +1,21 @@
+[package]
+name = "file-transfer"
+version = "0.1.0"
+edition = "2021"
+
+authors = ["mobeicanyue"]
+categories = ["network-programming", "file-transfer"]
+description = "A LAN file transfer tool in Rust"
+keywords = ["file-transfer", "network-programming", "rust"]
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+local-ip-address = { version = "0.5.3", default-features = false }
+blake3 = { version = "1.4.1", features = ["std"], default-features = false }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "z"
