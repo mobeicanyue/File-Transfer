@@ -3,7 +3,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::net::{SocketAddr, TcpStream};
 use std::path::Path;
 
-const MAX_PACKET_SIZE: usize = 1024;
+const MAX_PACKET_SIZE: usize = 4 * 1024;
 
 pub fn send_file(socket: &SocketAddr, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     println!("Connecting to server at {}", socket);
@@ -22,7 +22,7 @@ pub fn send_file(socket: &SocketAddr, file_path: &str) -> Result<(), Box<dyn std
 
     // 1.发送文件名的长度
     let file_name = Path::new(file_path).file_name().unwrap().to_str().unwrap();
-    let file_name_length = file_name.len() as u32;
+    let file_name_length = file_name.len() as u8;
     stream.write_all(&file_name_length.to_be_bytes())?;
     println!("File name length: {}", file_name_length);
 

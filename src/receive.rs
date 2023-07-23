@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener};
 
-const MAX_PACKET_SIZE: usize = 1024;
+const MAX_PACKET_SIZE: usize = 4 * 1024;
 
 pub fn receive_file(ip: &SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     println!("Server listening on {}", ip);
@@ -15,9 +15,9 @@ pub fn receive_file(ip: &SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     let (mut stream, _) = listener.accept()?;
 
     // 1.接收文件名的长度
-    let mut file_name_length_buffer = [0; 4]; // Assuming the length can be represented in 4 bytes (u32)
+    let mut file_name_length_buffer = [0; 1]; // Assuming the length can be represented in 4 bytes (u32)
     stream.read_exact(&mut file_name_length_buffer)?;
-    let file_name_length = u32::from_be_bytes(file_name_length_buffer) as usize;
+    let file_name_length = file_name_length_buffer[0] as usize;
 
     // 2.接收文件名
     let mut file_name_buffer = vec![0; file_name_length];
@@ -39,7 +39,7 @@ pub fn receive_file(ip: &SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
 
     // 4.接收哈希值
     let mut hash_value_buffer = [0; 32]; // 默认32字节长度
-    // 接收哈希值
+                                         // 接收哈希值
     stream.read_exact(&mut hash_value_buffer)?;
 
     // 将哈希结果转换为十六进制字符串并打印
