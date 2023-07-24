@@ -34,7 +34,7 @@ fn main() {
             std::io::stdin().read_line(&mut file_path).unwrap();
             let file_path = file_path.trim();
 
-            send::send_file(&server_addr, file_path).unwrap();
+            send::send_file(&server_addr, file_path);
         }
         2 => {
             let nics = network_utils::get_nics(); // 获取所有的ip
@@ -43,7 +43,7 @@ fn main() {
 
             let server_addr = SocketAddr::V4(SocketAddrV4::new(socket, 6666)); // 创建socket
 
-            receive::receive_file(&server_addr).unwrap();
+            receive::receive_file(&server_addr);
         }
         _ => {
             println!("Invalid operation.");
