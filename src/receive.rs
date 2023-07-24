@@ -1,4 +1,4 @@
-use blake3::Hasher;
+use blake3::{Hash, Hasher};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener};
@@ -51,7 +51,7 @@ pub fn receive_file(ip: &SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     stream.read_exact(&mut hash_value_buffer)?;
 
     // 将哈希结果转换为十六进制字符串并打印
-    let hash_string_buffer = blake3::Hash::from(hash_value_buffer).to_hex();
+    let hash_string_buffer = Hash::from(hash_value_buffer).to_hex();
     println!("BLAKE3 Hash Received: {}", hash_string_buffer);
 
     // 计算文件的blake3

@@ -1,5 +1,5 @@
 use blake3::Hasher;
-use std::io::{Read, Seek, SeekFrom, Write,copy};
+use std::io::{copy, Read, Seek, SeekFrom, Write};
 use std::net::{Shutdown, SocketAddr, TcpStream};
 use std::path::Path;
 

@@ -18,6 +18,7 @@ fn main() {
 
             // 如果ip为空，则默认为 127.0.0.1
             let ip = if ip.trim().is_empty() {
+                println!("Using default ip (127.0.0.1):");
                 "127.0.0.1"
             } else {
                 &ip
