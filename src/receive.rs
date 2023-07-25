@@ -1,25 +1,34 @@
 use blake3::{Hash, Hasher};
 use std::fs::File;
 use std::io::{Read, Write};
-use std::net::{SocketAddr, TcpListener};
+use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::thread;
 
 const MAX_PACKET_SIZE: usize = 4 * 1024;
+
+pub fn run_server(socket_server: &SocketAddr) {
+    println!("Server listening on {}", socket_server);
+    // 创建套接字
+    let listener: TcpListener = TcpListener::bind(socket_server).unwrap();
+    println!("Waiting for incoming connections...");
+
+    loop {
+        // 接收连接
+        let (mut stream, socket) = listener.accept().unwrap();
+        // 获取客户端的IP地址
+        let client_ip = socket.ip();
+        println!("Remote Client IP address: {}", client_ip);
+        // 处理每个客户端的连接
+        thread::spawn(move || {
+            receive_file(&mut stream);
+        });
+    }
+}
 
 /// function: receive_file
 /// args:
 ///   ip: &SocketAddr, 服务器地址
-pub fn receive_file(ip: &SocketAddr) {
-    println!("Server listening on {}", ip);
-    // 创建套接字
-    let listener: TcpListener = TcpListener::bind(ip).unwrap();
-    println!("Waiting for incoming connections...");
-
-    // 接收连接
-    let (mut stream, socket) = listener.accept().unwrap();
-    // 获取客户端的IP地址
-    let client_ip = socket.ip();
-    println!("Remote Client IP address: {}", client_ip);
-
+pub fn receive_file(stream: &mut TcpStream) {
     // 1.接收文件名的长度
     let mut file_name_length_buffer = [0; 1]; // Assuming the length can be represented in 4 bytes (u32)
     stream.read_exact(&mut file_name_length_buffer).unwrap();

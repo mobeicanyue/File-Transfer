@@ -38,7 +38,7 @@ pub fn send_file(socket: &SocketAddr, file_path: &str) {
     println!("File name: {}", file_name);
 
     // 3.发送文件字节的长度
-    let file_length = file.metadata().unwrap().len() as u64;
+    let file_length = file.metadata().unwrap().len();
     stream.write_all(&file_length.to_be_bytes()).unwrap();
     println!("File size: {} bytes", file_length);
 

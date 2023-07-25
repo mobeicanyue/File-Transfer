@@ -43,7 +43,7 @@ fn main() {
 
             let server_addr = SocketAddr::V4(SocketAddrV4::new(socket, 6666)); // 创建socket
 
-            receive::receive_file(&server_addr);
+            receive::run_server(&server_addr);
         }
         _ => {
             println!("Invalid operation.");
