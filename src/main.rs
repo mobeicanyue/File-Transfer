@@ -1,6 +1,6 @@
-mod network_utils;
 mod receive;
 mod send;
+mod utils;
 
 use std::{
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
@@ -8,7 +8,7 @@ use std::{
 };
 
 fn main() {
-    let num_op: u8 = network_utils::select_operation(); // 选择操作，发送或者接收
+    let num_op: u8 = utils::select_operation(); // 选择操作，发送或者接收
 
     match num_op {
         1 => {
@@ -33,13 +33,14 @@ fn main() {
             let mut file_path = String::new();
             std::io::stdin().read_line(&mut file_path).unwrap();
             let file_path = file_path.trim();
+            let file_path = utils::check_file_exist(file_path); // 检查文件是否存在
 
-            send::send_file(&server_addr, file_path);
+            send::send_file(&server_addr, &file_path);
         }
         2 => {
-            let nics = network_utils::get_nics(); // 获取所有的ip
+            let nics = utils::get_nics(); // 获取所有的ip
 
-            let socket: Ipv4Addr = network_utils::select_nic(nics); // 选择ip
+            let socket: Ipv4Addr = utils::select_nic(nics); // 选择ip
 
             let server_addr = SocketAddr::V4(SocketAddrV4::new(socket, 6666)); // 创建socket
 

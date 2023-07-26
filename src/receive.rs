@@ -4,7 +4,9 @@ use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::thread;
 
-const MAX_PACKET_SIZE: usize = 4 * 1024;
+use crate::utils;
+
+const MAX_PACKET_SIZE: usize = utils::MAX_PACKET_SIZE;
 
 pub fn run_server(socket_server: &SocketAddr) {
     println!("Server listening on {}", socket_server);
@@ -27,7 +29,7 @@ pub fn run_server(socket_server: &SocketAddr) {
 
 /// function: receive_file
 /// args:
-///   ip: &SocketAddr, 服务器地址
+///   stream: &TcpStream, 客户端连接流
 pub fn receive_file(stream: &mut TcpStream) {
     // 1.接收文件名的长度
     let mut file_name_length_buffer = [0; 1]; // Assuming the length can be represented in 4 bytes (u32)
@@ -49,8 +51,7 @@ pub fn receive_file(stream: &mut TcpStream) {
     let mut file_length_buffer = [0; 8]; // Assuming the length can be represented in 8 bytes (u64)
     stream.read_exact(&mut file_length_buffer).unwrap();
     let file_length = u64::from_be_bytes(file_length_buffer);
-
-    println!("File size: {} bytes", file_length);
+    utils::print_file_size(file_length);
 
     // 4.接收哈希值
     let mut hash_value_buffer = [0; 32]; // 默认32字节长度
@@ -63,19 +64,23 @@ pub fn receive_file(stream: &mut TcpStream) {
     // 计算文件的blake3
     let mut blake3 = Hasher::new();
     // 5.接收文件字节
+    let progress_bar = utils::create_progress_bar(file_length); // 创建进度条
     loop {
-        let bytes_read = stream.read(&mut buffer).unwrap();
+        let bytes_read = match stream.read(&mut buffer) {
+            Ok(0) => break, // Connection closed, file receiving completed
+            Ok(n) => n,
+            Err(err) => panic!(
+                "An error occurred while receiving data: \x1b[0;37;41m{}\x1b[0m",
+                err
+            ),
+        };
 
-        if bytes_read == 0 {
-            // Connection closed, file receiving completed
-            break;
-        }
-
-        // 更新 BLAKE3 哈希值
-        blake3.update(&buffer[..bytes_read]);
-
+        blake3.update(&buffer[..bytes_read]); // 更新 BLAKE3 哈希值
+        progress_bar.inc(bytes_read as u64); // 更新进度条
         file.write_all(&buffer[..bytes_read]).unwrap();
     }
+
+    progress_bar.finish(); // 完成进度条
 
     println!("File received. Verifying file integrity...");
 
@@ -92,7 +97,9 @@ pub fn receive_file(stream: &mut TcpStream) {
     if &hash_value_buffer == hash_value_calculate {
         println!("File integrity verified. File successfully received.");
     } else {
-        println!("File integrity verification failed. File may be corrupted.");
+        println!(
+            "\x1b[0;37;41m File integrity verification failed. File may be corrupted. \x1b[0m "
+        );
     }
 
     println!("File successfully received.");

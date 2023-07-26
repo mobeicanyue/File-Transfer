@@ -1,5 +1,9 @@
+use indicatif::{HumanBytes, ProgressBar, ProgressState, ProgressStyle};
 use local_ip_address::list_afinet_netifas;
+use std::fmt::Write as FmtWrite;
 use std::net::{IpAddr, Ipv4Addr};
+
+pub const MAX_PACKET_SIZE: usize = 1024 * 1024; // 最大包大小
 
 /// Get all network interfaces with IPv4 private address except loopback
 /// Returns a vector of tuples (index, name, ip)
@@ -10,14 +14,12 @@ pub fn get_nics() -> Vec<(usize, String, Ipv4Addr)> {
     let network_interfaces: Vec<(String, IpAddr)> = list_afinet_netifas().unwrap();
 
     let mut private_nics: Vec<(usize, String, Ipv4Addr)> = Vec::new();
-    let mut count: usize = 0;
+    let mut count: usize = 1;
 
     for (name, ip) in network_interfaces.iter() {
         if let IpAddr::V4(ipv4) = ip {
-            // if ipv4.is_private() {
-                private_nics.push((count, name.to_string(), *ipv4));
-                count += 1;
-            // }
+            private_nics.push((count, name.to_string(), *ipv4));
+            count += 1;
         }
     }
 
@@ -32,11 +34,29 @@ pub fn get_nics() -> Vec<(usize, String, Ipv4Addr)> {
     private_nics
 }
 
+// 文件检验是否存在，如果不存在则重新输入
+pub fn check_file_exist(file_path: &str) -> String {
+    let mut file_path = file_path.to_string();
+    loop {
+        if std::path::Path::new(&file_path).exists() {
+            break;
+        } else {
+            println!("File not found: {}", file_path);
+            file_path.clear();
+            println!("Please enter the file path again:");
+            std::io::stdin().read_line(&mut file_path).unwrap();
+            file_path = file_path.trim().to_string();
+        }
+    }
+    file_path
+}
+
 pub fn select_nic(nics: Vec<(usize, String, Ipv4Addr)>) -> Ipv4Addr {
-    println!("\nPlease select the network interface you want to use (default 0):");
+    println!("\nPlease select the network interface you want to use (default 1):");
     let mut num_net = String::new();
     std::io::stdin().read_line(&mut num_net).unwrap();
     let num_net = num_net.trim();
+
     let nic_index: usize = if num_net.is_empty() {
         0
     } else {
@@ -55,4 +75,17 @@ pub fn select_operation() -> u8 {
     std::io::stdin().read_line(&mut num_op).unwrap();
     let num_op = num_op.trim().parse().unwrap();
     num_op
+}
+
+pub fn print_file_size(file_length: u64) {
+    println!("File size: {} ({})", file_length, HumanBytes(file_length));
+}
+
+pub fn create_progress_bar(file_length: u64) -> ProgressBar {
+    let progress_bar = ProgressBar::new(file_length); // 创建进度条
+    progress_bar.set_style(ProgressStyle::default_bar()
+        .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})").unwrap()
+        .with_key("eta", |state: &ProgressState, w: &mut dyn FmtWrite| write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap())
+        .progress_chars("#>-"));
+    progress_bar
 }

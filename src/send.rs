@@ -4,7 +4,9 @@ use std::io::{copy, Read, Seek, SeekFrom, Write};
 use std::net::{Shutdown, SocketAddr, TcpStream};
 use std::path::Path;
 
-const MAX_PACKET_SIZE: usize = 4 * 1024;
+use crate::utils;
+
+const MAX_PACKET_SIZE: usize = utils::MAX_PACKET_SIZE;
 
 /// function: send_file
 /// args:
@@ -16,7 +18,7 @@ pub fn send_file(socket: &SocketAddr, file_path: &str) {
     // 创建套接字
     let mut stream = TcpStream::connect(socket).unwrap();
 
-    // 创建文件
+    // 打开文件
     let mut file = File::open(file_path).unwrap();
 
     // 计算文件的blake3
@@ -40,7 +42,7 @@ pub fn send_file(socket: &SocketAddr, file_path: &str) {
     // 3.发送文件字节的长度
     let file_length = file.metadata().unwrap().len();
     stream.write_all(&file_length.to_be_bytes()).unwrap();
-    println!("File size: {} bytes", file_length);
+    utils::print_file_size(file_length);
 
     // 4.发送blake3值
     stream.write_all(hash_value).unwrap();
@@ -50,14 +52,19 @@ pub fn send_file(socket: &SocketAddr, file_path: &str) {
     // 5.发送文件字节
     let mut buffer = [0; MAX_PACKET_SIZE];
     file.seek(SeekFrom::Start(0)).unwrap(); // 重置文件指针
+    let progress_bar = utils::create_progress_bar(file_length); // 创建进度条
     loop {
-        let bytes_read = file.read(&mut buffer).unwrap();
-        if bytes_read == 0 {
-            // Reached EOF, file sending completed
-            break;
-        }
-        stream.write_all(&buffer[..bytes_read]).unwrap();
+        let bytes_read = match file.read(&mut buffer) {
+            Ok(0) => break, // Reached EOF, file sending completed
+            Ok(n) => n,
+            Err(e) => panic!("An error occurred while reading the file: {}", e),
+        };
+
+        progress_bar.inc(bytes_read as u64); // 更新进度条
+        stream.write_all(&buffer[..bytes_read]).unwrap(); // 将字节写入文件
     }
+
+    progress_bar.finish(); // 完成进度条
 
     // 关闭写入流
     stream.shutdown(Shutdown::Write).unwrap();
