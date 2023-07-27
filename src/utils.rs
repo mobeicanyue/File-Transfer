@@ -9,14 +9,11 @@ pub const MAX_RECEIVE_SIZE: usize = 1024 * 1024; // 最大接收大小 1M
 
 /// Get all network interfaces with IPv4 private address except loopback
 /// Returns a vector of tuples (index, name, ip)
-/// index: usize - index of the network interface
-/// name: String - name of the network interface
-/// ip: Ipv4Addr - IPv4 address of the network interface
 pub fn get_nics() -> Vec<(usize, String, Ipv4Addr)> {
     let network_interfaces: Vec<(String, IpAddr)> = list_afinet_netifas().unwrap();
 
     let mut private_nics: Vec<(usize, String, Ipv4Addr)> = Vec::new();
-    let mut count: usize = 1;
+    let mut count: usize = 0;
 
     for (name, ip) in network_interfaces.iter() {
         if let IpAddr::V4(ipv4) = ip {
@@ -54,7 +51,7 @@ pub fn check_file_exist(file_path: &str) -> String {
 }
 
 pub fn select_nic(nics: Vec<(usize, String, Ipv4Addr)>) -> Ipv4Addr {
-    println!("\nPlease select the network interface you want to use (default 1):");
+    println!("\nPlease select the network interface you want to use (default 0):");
     let mut num_net = String::new();
     std::io::stdin().read_line(&mut num_net).unwrap();
     let num_net = num_net.trim();
@@ -62,13 +59,35 @@ pub fn select_nic(nics: Vec<(usize, String, Ipv4Addr)>) -> Ipv4Addr {
     let nic_index: usize = if num_net.is_empty() {
         0
     } else {
-        num_net.parse().unwrap()
+        check_nic_index(nics.len(), num_net.parse().unwrap())
     };
 
     let nic = nics.get(nic_index).unwrap(); // 获取选择的网卡
     println!("You selected: ({}: {} ({}))", nic.0, nic.1, nic.2);
 
     nic.2 // 返回选择的网卡的ip
+}
+
+// 检查选择的网卡是否超过范围,超过则循环重新输入
+fn check_nic_index(nics_len: usize, nic_index: isize) -> usize {
+    let mut nic_index = nic_index.to_string(); //
+    let nic_index: usize = loop {
+        if nic_index.is_empty() {
+            break 0;
+        } else {
+            let num: isize = nic_index.parse().unwrap();
+            if num < 0 || num > (nics_len - 1) as isize {
+                println!("Invalid network interface index.");
+                nic_index.clear();
+                println!("Please enter the network interface index again:");
+                std::io::stdin().read_line(&mut nic_index).unwrap();
+                nic_index = nic_index.trim().to_string();
+            } else {
+                break num as usize;
+            }
+        }
+    };
+    nic_index
 }
 
 pub fn select_operation() -> u8 {
@@ -85,8 +104,13 @@ pub fn print_file_size(file_length: u64) {
 
 pub fn create_progress_bar(file_length: u64) -> ProgressBar {
     let progress_bar = ProgressBar::new(file_length); // 创建进度条
-    progress_bar.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] {bar:50} {bytes}/{total_bytes} ({eta})").unwrap()
-        .with_key("eta", |state: &ProgressState, w: &mut dyn Write| write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()));
+    progress_bar.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] {bar:50} {bytes}/{total_bytes} ({eta})")
+            .unwrap()
+            .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
+                write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()
+            }),
+    );
     progress_bar
 }
