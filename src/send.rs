@@ -6,7 +6,7 @@ use std::path::Path;
 
 use crate::utils;
 
-const MAX_PACKET_SIZE: usize = utils::MAX_PACKET_SIZE;
+const MAX_PACKET_SIZE: usize = utils::MAX_SEND_SIZE;
 
 /// function: send_file
 /// args:

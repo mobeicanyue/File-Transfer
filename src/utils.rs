@@ -1,9 +1,11 @@
 use indicatif::{HumanBytes, ProgressBar, ProgressState, ProgressStyle};
 use local_ip_address::list_afinet_netifas;
-use std::fmt::Write as FmtWrite;
+use std::fmt::Write;
 use std::net::{IpAddr, Ipv4Addr};
 
-pub const MAX_PACKET_SIZE: usize = 1024 * 1024; // 最大包大小
+// pub const MAX_PACKET_SIZE: usize = 1024 * 1024; // 最大包大小
+pub const MAX_SEND_SIZE: usize = 2 * 1024 * 1024; // 最大发送大小 2M
+pub const MAX_RECEIVE_SIZE: usize = 1024 * 1024; // 最大接收大小 1M
 
 /// Get all network interfaces with IPv4 private address except loopback
 /// Returns a vector of tuples (index, name, ip)
@@ -84,8 +86,7 @@ pub fn print_file_size(file_length: u64) {
 pub fn create_progress_bar(file_length: u64) -> ProgressBar {
     let progress_bar = ProgressBar::new(file_length); // 创建进度条
     progress_bar.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})").unwrap()
-        .with_key("eta", |state: &ProgressState, w: &mut dyn FmtWrite| write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap())
-        .progress_chars("#>-"));
+        .template("{spinner:.green} [{elapsed_precise}] {bar:50} {bytes}/{total_bytes} ({eta})").unwrap()
+        .with_key("eta", |state: &ProgressState, w: &mut dyn Write| write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()));
     progress_bar
 }

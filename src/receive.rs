@@ -6,7 +6,7 @@ use std::thread;
 
 use crate::utils;
 
-const MAX_PACKET_SIZE: usize = utils::MAX_PACKET_SIZE;
+const MAX_PACKET_SIZE: usize = utils::MAX_RECEIVE_SIZE;
 
 pub fn run_server(socket_server: &SocketAddr) {
     println!("Server listening on {}", socket_server);
