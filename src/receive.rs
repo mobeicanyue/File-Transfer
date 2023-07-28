@@ -2,7 +2,7 @@ use blake3::{Hash, Hasher};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
-use std::thread;
+use threadpool::ThreadPool;
 
 use crate::utils;
 
@@ -14,6 +14,9 @@ pub fn run_server(socket_server: &SocketAddr) {
     let listener: TcpListener = TcpListener::bind(socket_server).unwrap();
     println!("Waiting for incoming connections...");
 
+    // 创建线程池，设置最小线程数和最大线程数，这里我们设置最小为 4，最大为 8，你可以根据需要调整
+    let thread_pool = ThreadPool::new(4);
+
     loop {
         // 接收连接
         let (mut stream, socket) = listener.accept().unwrap();
@@ -21,7 +24,7 @@ pub fn run_server(socket_server: &SocketAddr) {
         let client_ip = socket.ip();
         println!("Remote Client IP address: {}", client_ip);
         // 处理每个客户端的连接
-        thread::spawn(move || {
+        thread_pool.execute(move || {
             receive_file(&mut stream);
         });
     }
